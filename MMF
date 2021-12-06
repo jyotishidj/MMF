@@ -1,0 +1,50 @@
+def MMF(signal, Fs):
+
+    # signal stands for the raw ECG signal
+    # Fs stands for the sampling frequency of the signal
+    # Paper: Sun, Yan, Kap Luk Chan, and Shankar Muthu Krishnan. "ECG signal conditioning by morphological filtering." Computers in biology and medicine 32.6 (2002): 465-479.
+     
+    import numpy as np
+
+    L=int(0.2*Fs)
+    Bo=np.zeros(L)
+    Bc=np.zeros(int(1.5*L))
+    
+    def erosion(ffsignal,fB):
+        
+        fsignal=np.zeros_like(ffsignal)
+        start=int((len(fB)-1)/2)
+        stop=len(fsignal)-int((len(fB)+1)/2)
+        
+        for i in range(start,stop):
+            fsignal[i]=np.min(ffsignal[i-start:i-start+len(fB)]-fB)
+            
+        return(fsignal)
+        
+        
+        
+    def dilation(ffsignal,fB):
+        
+        fsignal=np.zeros_like(ffsignal)
+        start=int((len(fB)-1)/2)
+        stop=len(fsignal)-int((len(fB)+1)/2)
+        
+        for i in range(start,stop):
+            fsignal[i]=np.max(ffsignal[i-start:i-start+len(fB)]+fB)
+            
+        return(fsignal)
+        
+    
+    if signal.ndim==1:
+        baseline=erosion(dilation(dilation(erosion(signal,Bo),Bo),Bc),Bc)
+    else:
+        baseline=[]
+        for i in range(np.size(signal,1)):
+            baseline=np.append(baseline,erosion(dilation(dilation(erosion(signal[:,i],Bo),Bo),Bc),Bc)).reshape(-1,np.size(signal,0))
+            
+        baseline=baseline.T
+            
+    
+    final = signal-baseline
+    
+    return final
